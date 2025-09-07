@@ -1,17 +1,4 @@
-# HR Planning Exercise — Starter Kit
-
-A minimal, **deterministic** browser app scaffold for the talent management simulation.
-No build tools — just open in any static host (e.g., StackBlitz, GitHub Pages, Netlify) and extend.
-
-## Quick start (no installs)
-
-1. Go to https://stackblitz.com/.
-2. Click **"Create New" → "Static HTML"**.
-3. Drag the entire contents of this ZIP into the StackBlitz file tree (or use **Upload**).
-4. The app should run instantly on the right pane.
-
-Alternatively, upload the folder to **Replit** (HTML/CSS/JS) or host the files on GitHub and enable **GitHub Pages**.
-
+# HR Planning Exercise
 ## Project structure
 
 ```
@@ -43,12 +30,3 @@ Alternatively, upload the folder to **Replit** (HTML/CSS/JS) or host the files o
 - Replacement chart and promotion flows (fill vacancies internally).
 - Better applicant generation limited to **current vacancies** only.
 - Instructor view & export of final scores.
-
-## Saving your work
-
-All changes save to **localStorage** in the browser. In StackBlitz/Replit, sign in to save across devices and push to GitHub.
-You can also **Download** your project as a ZIP any time.
-
-## License
-
-Do whatever you want. This is a teaching scaffold.
