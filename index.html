@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HR Planning Exercise — Starter</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>HR Planning Exercise — Starter</h1>
+    <p>A minimal, deterministic simulation scaffold you can extend.</p>
+  </header>
+
+  <nav class="topbar">
+    <button id="btn-new-sim">New Simulation</button>
+    <button id="btn-commit-round">Commit Round</button>
+    <span id="round-indicator">Round: 1</span>
+    <span id="version-indicator">Version: Basic</span>
+    <label class="toggle"><input type="checkbox" id="toggle-advanced"> Advanced mode</label>
+  </nav>
+
+  <main>
+    <section>
+      <h2>Organizational Chart</h2>
+      <div id="orgchart"></div>
+    </section>
+
+    <section>
+      <h2>Employee Data Table</h2>
+      <div class="toolbar">
+        <input id="search" placeholder="Search name/position..." />
+      </div>
+      <div id="employee-table"></div>
+    </section>
+
+    <section>
+      <h2>Nine-Box Grid</h2>
+      <p class="muted">Pick a Performance/Potential bucket for each employee (drag-and-drop optional to add later).</p>
+      <div id="ninebox"></div>
+    </section>
+
+    <section>
+      <h2>Applicant Pool (for open positions)</h2>
+      <div id="applicants"></div>
+    </section>
+
+    <section>
+      <h2>Score &amp; Summary</h2>
+      <div id="score"></div>
+      <div id="summary"></div>
+    </section>
+  </main>
+
+  <footer>
+    <small>Local state is saved to your browser (localStorage). You can clear it with "New Simulation".</small>
+  </footer>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
