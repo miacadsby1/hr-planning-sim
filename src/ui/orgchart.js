@@ -1,11 +1,5 @@
 export function renderOrgChart(el, state) {
-  // Minimal textual tree by grouping by prefixes in the position title.
-  const groups = {
-    'CEO': [], 'VP': [], 'Director': [], 'Manager': [], 'Specialist': []
-  };
-  for (const e of state.employees) {
-    groups[levelOf(e.position)]?.push(e);
-  }
+  const groups = { CEO: [], VP: [], Director: [], Manager: [], Specialist: [] };
 
   function levelOf(title) {
     if (title.includes('CEO')) return 'CEO';
@@ -15,14 +9,26 @@ export function renderOrgChart(el, state) {
     return 'Specialist';
   }
 
-  const html = Object.entries(groups).map(([level, list]) => `
-    <div class="card">
-      <h4>${level} (${list.length})</h4>
-      <div class="flex">
-        ${list.map(e => `<span class="badge" title="${e.position} — ${e.status}">${e.name}</span>`).join('')}
+  for (const e of state.employees) {
+    const level = levelOf(e.position);
+    groups[level].push(e);
+  }
+
+  const html = Object.entries(groups).map(([level, list]) => {
+    const chips = list.map(e => {
+      const vacant = e.status !== 'active';
+      const cls = 'badge' + (vacant ? ' danger' : '');
+      const label = vacant ? `${e.position} — VACANT` : `${e.name}`;
+      const title = vacant ? `${e.position} — ${e.status}` : `${e.position} — active`;
+      return `<span class="${cls}" title="${title}">${label}</span>`;
+    }).join('');
+    return `
+      <div class="card">
+        <h4>${level} (${list.length})</h4>
+        <div class="flex">${chips}</div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   el.innerHTML = html;
 }
