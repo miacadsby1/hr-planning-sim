@@ -14,7 +14,7 @@ export function applyTrainingBoost(score, trainingType) {
   if (!trainingType) return score;
   // 0.5–1.0 boost with diminishing returns near 5.0
   const boost = 0.7;
-  const scaled = score + boost * (1 - (score - 1) / 4); // fades as score approaches 5
+  const scaled = score + boost * (1 - (score - 1) / 4);
   return clamp(scaled);
 }
 
@@ -122,7 +122,7 @@ export function advanceOneYear(state) {
     round,
     openPositions,
     left: employees.filter(e => ['retired','quit','fired'].includes(e.status)).map(e => ({id:e.id,name:e.name,reason:e.status})),
-    score: null // filled after we compute below from active headcount
+    score: null
   };
 
   const next = {
@@ -130,11 +130,11 @@ export function advanceOneYear(state) {
     round: round + 1,
     employees,
     applicants,
-    trainings: {},         // reset training choices each year
+    trainings: {},
     history: [...state.history, roundSummary]
   };
 
-  // 6) Compute score after the turnover (based on active org now)
+  // 6) Compute score after the turnover
   const s = score(next);
   next.history[next.history.length - 1].score = s;
 

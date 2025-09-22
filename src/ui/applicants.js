@@ -25,7 +25,7 @@ export function renderApplicants(el, state, setState) {
       <td>${a.performance.toFixed(1)}</td>
       <td>${a.potential.toFixed(1)}</td>
       <td>${a.notes || ''}</td>
-      <td><button data-id="${a.id}">Hire into role</button></td>
+      <td><button data-id="\${a.id}">Hire into role</button></td>
     </tr>
   `).join('');
 

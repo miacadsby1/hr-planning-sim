@@ -6,10 +6,15 @@ export function renderNineBox(el, state, setState) {
   const selectors = active.map(e => {
     const k = e.id;
     const sel = state.ninebox[k] || { perfBucket: 1, potBucket: 1 };
+
     const perfOpts = PERFORMANCE_BUCKETS.map((b, i) =>
-      `<option value="${i}" ${i===sel.perfBucket?'selected':''}>Perf: ${b}</option>`).join('');
+      `<option value="${i}" ${i === sel.perfBucket ? 'selected' : ''}>Perf: ${b}</option>`
+    ).join('');
+
     const potOpts = POTENTIAL_BUCKETS.map((b, i) =>
-      `<option value="${i}" ${i===sel.potBucket?'selected':''}>Pot: ${b}</option>`).join('');
+      `<option value="${i}" ${i === sel.potBucket ? 'selected' : ''}>Pot: ${b}</option>`
+    ).join('');
+
     return `
       <div class="row">
         <span class="badge">${e.name}</span>
@@ -21,7 +26,12 @@ export function renderNineBox(el, state, setState) {
 
   const grid = NINEBOX.map((row, r) => `
     <div class="grid-row">
-      ${row.map((label, c) => `<div class="slot" data-row="${r}" data-col="${c}"><div class="label">${label}</div><div class="bin"></div></div>`).join('')}
+      ${row.map((label, c) =>
+        `<div class="slot" data-row="${r}" data-col="${c}">
+           <div class="label">${label}</div>
+           <div class="bin"></div>
+         </div>`
+      ).join('')}
     </div>
   `).join('');
 
@@ -36,7 +46,6 @@ export function renderNineBox(el, state, setState) {
   el.querySelectorAll('select.perf, select.pot').forEach(sel => {
     sel.addEventListener('change', () => {
       const id = sel.dataset.id;
-      const prev = state.ninebox[id] || { perfBucket: 1, potBucket: 1 };
       const next = {
         ...state,
         ninebox: {
@@ -48,7 +57,6 @@ export function renderNineBox(el, state, setState) {
         }
       };
       setState(next, { warnOnFirstDecision: true });
-      // repaint bins after save
       paintBins(el, next);
     });
   });
@@ -59,6 +67,7 @@ export function renderNineBox(el, state, setState) {
 function paintBins(el, state) {
   // Clear bins
   el.querySelectorAll('.bin').forEach(b => b.innerHTML = '');
+
   for (const [empId, v] of Object.entries(state.ninebox)) {
     const slot = el.querySelector(`.slot[data-row="${v.perfBucket}"][data-col="${v.potBucket}"] .bin`);
     const e = state.employees.find(x => x.id === empId);
