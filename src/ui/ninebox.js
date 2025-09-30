@@ -75,6 +75,17 @@ function paintBins(el, state) {
       const chip = document.createElement('span');
       chip.className = 'badge';
       chip.textContent = e.name;
+
+      // add a tiny training tag if selected this round
+      const t = (state.trainings || {})[empId];
+      if (t === 'performance' || t === 'potential') {
+        const tag = document.createElement('span');
+        tag.className = 'tag ' + (t === 'performance' ? 'perf' : 'pot');
+        tag.textContent = t === 'performance' ? 'Perf' : 'Pot';
+        chip.appendChild(tag);
+        chip.title = `${e.name} — ${t === 'performance' ? 'Performance training' : 'Potential development'}`;
+      }
+
       slot.appendChild(chip);
     }
   }

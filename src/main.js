@@ -4,6 +4,7 @@ import { renderNineBox } from './ui/ninebox.js';
 import { renderOrgChart } from './ui/orgchart.js';
 import { renderApplicants } from './ui/applicants.js';
 import { score, advanceOneYear } from './rules.js';
+import { MAX_ROUNDS } from './constants.js';
 
 let state = loadState();
 let warnedThisRound = false;
@@ -21,6 +22,88 @@ function setState(next, opts = {}) {
   saveState(state);
   render();
 }
+
+/* ---------------- Round Summary renderer ---------------- */
+function renderRoundSummary(el, state) {
+  if (!el) return;
+
+  const h = state.history || [];
+  if (h.length === 0) {
+    el.innerHTML = `<div class="muted">No rounds committed yet.</div>`;
+    return;
+  }
+
+  const last = h[h.length - 1];
+
+  const leftList = (last.left && last.left.length)
+    ? last.left.map(x => `<li>${x.name} — ${x.reason}</li>`).join('')
+    : '<li>None</li>';
+
+  const openList = (last.openPositions && last.openPositions.length)
+    ? last.openPositions.map(t => `<li>${t}</li>`).join('')
+    : '<li>No open positions</li>';
+
+  const trend = h.map(s => `R${s.round}: ${Number(s.score ?? 0).toFixed(2)}`).join(' → ');
+
+  el.innerHTML = `
+    <div class="card">
+      <h4>Round ${last.round} Summary</h4>
+      <div class="stack" style="margin-top:8px">
+        <div><strong>Score after round:</strong> ${Number(last.score ?? score(state)).toFixed(2)}</div>
+        <div>
+          <strong>Left this round:</strong>
+          <ul style="margin:6px 0 0 18px">${leftList}</ul>
+        </div>
+        <div>
+          <strong>Open positions:</strong>
+          <ul style="margin:6px 0 0 18px">${openList}</ul>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <strong>Score trend:</strong> ${trend || '—'}
+    </div>
+  `;
+}
+/* -------------------------------------------------------- */
+
+/* ---------------- Final Summary renderer ---------------- */
+function renderFinalSummary(el, state) {
+  if (!el) return;
+  const h = state.history || [];
+  if (!h.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  const trend = h.map(s => `R${s.round}: ${Number(s.score ?? 0).toFixed(2)}`).join(' → ');
+
+  // Remaining vacancies = any non-active positions at the end
+  const remainingVacancies = (state.employees || [])
+    .filter(e => e.status !== 'active')
+    .map(e => e.position);
+
+  const vacList = remainingVacancies.length
+    ? remainingVacancies.map(t => `<li>${t}</li>`).join('')
+    : '<li>None</li>';
+
+  const finalScore = Number(score(state)).toFixed(2);
+
+  el.innerHTML = `
+    <div class="card">
+      <h3>Final Summary (Basic)</h3>
+      <div class="stack" style="margin-top:8px">
+        <div><strong>Final score:</strong> ${finalScore}</div>
+        <div><strong>Score trend:</strong> ${trend || '—'}</div>
+        <div>
+          <strong>Remaining vacancies:</strong>
+          <ul style="margin:6px 0 0 18px">${vacList}</ul>
+        </div>
+      </div>
+    </div>
+  `;
+}
+/* -------------------------------------------------------- */
 
 function render() {
   // Header indicators
@@ -43,21 +126,37 @@ function render() {
   const applicantsEl = $('#applicants');
   if (applicantsEl) renderApplicants(applicantsEl, state, setState);
 
-  // Score (two targets supported: #score and #current-score)
+  // Score
   const s = score(state).toFixed(2);
-
   const scoreEl = $('#score');
   if (scoreEl) scoreEl.textContent = 'Current Score: ' + s;
 
   const currentScoreEl = document.getElementById('current-score');
   if (currentScoreEl) currentScoreEl.textContent = `Score: ${s}`;
 
-  // Round summary list
+  // Round summary card
+  const roundSummaryEl = document.querySelector('#round-summary');
+  if (roundSummaryEl) renderRoundSummary(roundSummaryEl, state);
+
+  // Final Summary + hide Commit after MAX_ROUNDS
+  const isFinal = state.round > MAX_ROUNDS;
+  const finalEl = document.querySelector('#final-summary');
+  if (finalEl) {
+    if (isFinal) renderFinalSummary(finalEl, state);
+    else finalEl.innerHTML = '';
+  }
+
+  const commitBtn = document.getElementById('btn-commit-round');
+  if (commitBtn) {
+    commitBtn.disabled = isFinal;
+    commitBtn.style.display = isFinal ? 'none' : '';
+  }
+
+  // Legacy simple history list (optional)
   const summaryEl = $('#summary');
   if (summaryEl) {
-    // Expecting history items with a .summary string; fallback if not present
-    summaryEl.innerHTML = state.history
-      .map(h => `<div>• ${h.summary ?? JSON.stringify(h)}</div>`)
+    summaryEl.innerHTML = (state.history || [])
+      .map(h => `<div>• ${h.summary ?? `Round ${h.round} — score ${Number(h.score ?? 0).toFixed(2)}`}</div>`)
       .join('');
   }
 }
@@ -77,6 +176,10 @@ if (newSimBtn) {
 const commitRoundBtn = $('#btn-commit-round');
 if (commitRoundBtn) {
   commitRoundBtn.addEventListener('click', () => {
+    if (state.round > MAX_ROUNDS) {
+      alert('Simulation complete! View the Final Summary.');
+      return;
+    }
     // Lock decisions and move forward a year
     warnedThisRound = false;
     state = advanceOneYear(state);

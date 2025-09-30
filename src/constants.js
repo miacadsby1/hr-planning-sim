@@ -22,3 +22,5 @@ export const NINEBOX = [
 
 export const POTENTIAL_BUCKETS = ['Low', 'Moderate', 'High'];
 export const PERFORMANCE_BUCKETS = ['Low', 'Moderate', 'High'];
+export const TRAINING_CAP = 4;
+export const MAX_ROUNDS = 3;

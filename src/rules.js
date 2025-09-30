@@ -102,9 +102,30 @@ export function advanceOneYear(state) {
   // 1) Update ratings deterministically + training boosts
   let employees = state.employees.map(e =>
     e.status === 'active'
-      ? updateLowPerfStrikes(updateRatings(e, round, state.trainings[e.id]))
+      ? updateLowPerfStrikes(updateRatings(e, round, (state.trainings || {})[e.id]))
       : e
   );
+
+  // --- DEBUG: show training effect before turnover ---
+  if (typeof window !== 'undefined' && window.console && state.trainings && Object.keys(state.trainings).length) {
+    console.group(`Training debug — end of updates, round ${round}`);
+    for (const [id, choice] of Object.entries(state.trainings)) {
+      const before = state.employees.find(x => x.id === id);
+      const after  = employees.find(x => x.id === id);
+      if (before && after) {
+        console.log(
+          `${before.name} (${id})`,
+          `choice=${choice}`,
+          `perf: ${before.performance.toFixed(2)} → ${after.performance.toFixed(2)}`,
+          `pot: ${before.potential.toFixed(2)} → ${after.potential.toFixed(2)}`
+        );
+      } else {
+        console.log(`${id} was not found among active employees when applying training.`);
+      }
+    }
+    console.groupEnd();
+  }
+  // --- end DEBUG ---
 
   // 2) Apply turnover at end of the year
   employees = employees.map(e => applyTurnover(e, round));
@@ -117,24 +138,27 @@ export function advanceOneYear(state) {
   // 4) Build applicant pool ONLY for open roles
   const applicants = generateApplicantsForOpenRoles(openPositions);
 
-  // 5) Append round summary
+  // 5) Append round summary (score will be filled after we compute it)
   const roundSummary = {
     round,
     openPositions,
-    left: employees.filter(e => ['retired','quit','fired'].includes(e.status)).map(e => ({id:e.id,name:e.name,reason:e.status})),
+    left: employees
+      .filter(e => ['retired', 'quit', 'fired'].includes(e.status))
+      .map(e => ({ id: e.id, name: e.name, reason: e.status })),
     score: null
   };
 
+  // 6) Advance state; reset trainings for the new round
   const next = {
     ...state,
     round: round + 1,
     employees,
     applicants,
-    trainings: {},
+    trainings: {}, // reset per spec (new choices each round)
     history: [...state.history, roundSummary]
   };
 
-  // 6) Compute score after the turnover
+  // 7) Compute score after turnover, store on the summary
   const s = score(next);
   next.history[next.history.length - 1].score = s;
 
