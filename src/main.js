@@ -23,7 +23,16 @@ function setState(next, opts = {}) {
   render();
 }
 
-/* ---------------- Round Summary renderer ---------------- */
+/* ------------ helpers (live vacancy computation for summaries) ------------ */
+function computeOpenPositionsFromEmployees(employees = []) {
+  const activeTitles    = new Set(employees.filter(e => e.status === 'active').map(e => e.position));
+  const nonActiveTitles =        employees.filter(e => e.status !== 'active').map(e => e.position);
+  // A title is open if (a) it exists among non-active records, and (b) no active holds it
+  return Array.from(new Set(nonActiveTitles.filter(t => !activeTitles.has(t))));
+}
+/* ------------------------------------------------------------------------- */
+
+/* ---------------- Round Summary renderer (uses LIVE vacancies) ---------------- */
 function renderRoundSummary(el, state) {
   if (!el) return;
 
@@ -39,9 +48,18 @@ function renderRoundSummary(el, state) {
     ? last.left.map(x => `<li>${x.name} — ${x.reason}</li>`).join('')
     : '<li>None</li>';
 
-  const openList = (last.openPositions && last.openPositions.length)
-    ? last.openPositions.map(t => `<li>${t}</li>`).join('')
+  // LIVE open positions based on current employees (so hires immediately reflect here)
+  const openNow = computeOpenPositionsFromEmployees(state.employees || []);
+  const openList = openNow.length
+    ? openNow.map(t => `<li>${t}</li>`).join('')
     : '<li>No open positions</li>';
+
+  // Optional: show hires if you’re recording them in history (applicants.js assigns latest.hired)
+  const hiredList = (last.hired && last.hired.length)
+    ? `<div><strong>New hires:</strong><ul style="margin:6px 0 0 18px">${
+        last.hired.map(hh => `<li>${hh.name} — ${hh.position}</li>`).join('')
+      }</ul></div>`
+    : '';
 
   const trend = h.map(s => `R${s.round}: ${Number(s.score ?? 0).toFixed(2)}`).join(' → ');
 
@@ -54,6 +72,7 @@ function renderRoundSummary(el, state) {
           <strong>Left this round:</strong>
           <ul style="margin:6px 0 0 18px">${leftList}</ul>
         </div>
+        ${hiredList}
         <div>
           <strong>Open positions:</strong>
           <ul style="margin:6px 0 0 18px">${openList}</ul>
@@ -65,7 +84,7 @@ function renderRoundSummary(el, state) {
     </div>
   `;
 }
-/* -------------------------------------------------------- */
+/* ----------------------------------------------------------------------------- */
 
 /* ---------------- Final Summary renderer ---------------- */
 function renderFinalSummary(el, state) {
@@ -78,11 +97,8 @@ function renderFinalSummary(el, state) {
 
   const trend = h.map(s => `R${s.round}: ${Number(s.score ?? 0).toFixed(2)}`).join(' → ');
 
-  // Remaining vacancies = any non-active positions at the end
-  const remainingVacancies = (state.employees || [])
-    .filter(e => e.status !== 'active')
-    .map(e => e.position);
-
+  // Remaining vacancies = any non-active positions at the end (live)
+  const remainingVacancies = computeOpenPositionsFromEmployees(state.employees || []);
   const vacList = remainingVacancies.length
     ? remainingVacancies.map(t => `<li>${t}</li>`).join('')
     : '<li>None</li>';
@@ -134,7 +150,7 @@ function render() {
   const currentScoreEl = document.getElementById('current-score');
   if (currentScoreEl) currentScoreEl.textContent = `Score: ${s}`;
 
-  // Round summary card
+  // Round summary card (now live to hires/promotions)
   const roundSummaryEl = document.querySelector('#round-summary');
   if (roundSummaryEl) renderRoundSummary(roundSummaryEl, state);
 
@@ -152,13 +168,18 @@ function render() {
     commitBtn.style.display = isFinal ? 'none' : '';
   }
 
-  // Legacy simple history list (optional)
+  // Optional legacy history dump
   const summaryEl = $('#summary');
   if (summaryEl) {
     summaryEl.innerHTML = (state.history || [])
       .map(h => `<div>• ${h.summary ?? `Round ${h.round} — score ${Number(h.score ?? 0).toFixed(2)}`}</div>`)
       .join('');
   }
+
+  // Make UI read-only in final mode (prevents edits after Round MAX_ROUNDS)
+  document.querySelectorAll('.train-select, select.perf, select.pot').forEach(sel => {
+    sel.disabled = isFinal;
+  });
 }
 
 // Buttons / toggles / inputs
