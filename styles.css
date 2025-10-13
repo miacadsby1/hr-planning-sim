@@ -210,13 +210,22 @@ input::placeholder{color:var(--muted)}
 }
 
 /* ====== Org chart cards ====== */
-#orgchart .card{
-  margin-bottom:var(--gap);
-}
+#orgchart .card{ margin-bottom:var(--gap); }
 #orgchart h4{
   font-size:14px;
   color:var(--muted);
   margin-bottom:8px;
+}
+/* nicer badge layout + mini tags for this round */
+#orgchart .badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+}
+#orgchart .badge .mini-tags{
+  display:inline-flex;
+  gap:6px;
 }
 
 /* ====== Summary list ====== */
@@ -239,7 +248,7 @@ hr{border:none; border-top:1px solid var(--border); margin:20px 0}
 .right{ text-align:right }
 .hidden{ display:none !important }
 
-/* tiny training badges */
+/* ====== Decision tags (training + actions) ====== */
 .tag{
   display:inline-block;
   padding:2px 6px;
@@ -254,3 +263,79 @@ hr{border:none; border-top:1px solid var(--border); margin:20px 0}
 }
 .tag.perf{ border-color:#2563eb33; background:#2563eb1a; }
 .tag.pot { border-color:#10b98133; background:#10b9811a; }
+
+/* New: tags for this round’s actions */
+.tag.hired    { border-color:#16a34a33; background:#16a34a1a; color:#136f3a; }
+.tag.promoted { border-color:#f59e0b33; background:#f59e0b1a; color:#7a5d00; }
+
+/* ====== Row states & status pills ====== */
+.row-inactive { opacity: 0.55; }
+
+.pill{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:12px;
+  line-height:18px;
+  border:1px solid transparent;
+}
+.status-active   { background:#eef7ee; color:#1f7a1f; border-color:#cfe8cf; }
+.status-vacant   { background:#fde8e8; color:#b42318; border-color:#f8caca; }
+.status-retired  { background:#f1f5f9; color:#475569; border-color:#e2e8f0; }
+.status-quit     { background:#fff4e5; color:#9a5d00; border-color:#ffe1b8; }
+.status-fired    { background:#fee2e2; color:#991b1b; border-color:#fecaca; }
+
+/* Dark mode tweaks for pills (optional) */
+@media (prefers-color-scheme: dark){
+  .status-active  { background:#14321a; color:#98f5b4; border-color:#1f4d29; }
+  .status-vacant  { background:#3a1515; color:#ffb4a9; border-color:#5a2323; }
+  .status-retired { background:#111827; color:#cbd5e1; border-color:#1f2937; }
+  .status-quit    { background:#3b2a14; color:#ffd89a; border-color:#5a4220; }
+  .status-fired   { background:#3b0e0e; color:#ffb4b4; border-color:#5c1a1a; }
+}
+
+/* ====== Final overlay ====== */
+.final-overlay[hidden] { display: none; }
+.final-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 20, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+}
+.final-card {
+  background: #fff;
+  color: #111;
+  width: min(720px, 92vw);
+  padding: 20px 22px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+.final-card h2 { margin: 0 0 10px; }
+.final-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.final-actions button {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+.final-actions button:hover { opacity: 0.9; }
+
+/* Optional: dim underlying content when final overlay is shown */
+body.final-mode main,
+body.final-mode header,
+body.final-mode nav,
+body.final-mode footer {
+  filter: blur(1px) saturate(0.8);
+  pointer-events: none;
+  user-select: none;
+}

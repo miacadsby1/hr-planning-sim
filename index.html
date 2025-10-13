@@ -8,7 +8,7 @@
 </head>
 <body>
   <header>
-    <h1>HR Planning Exercise </h1>
+    <h1>HR Planning Exercise</h1>
     <p>A minimal, deterministic simulation scaffold you can extend.</p>
   </header>
 
@@ -48,8 +48,8 @@
     <section>
       <h2>Score &amp; Summary</h2>
       <div id="score"></div>
-       <div id="round-summary"></div>
-       <div id="final-summary"></div>
+      <div id="round-summary"></div>
+      <!-- This is kept for legacy/optional history dump -->
       <div id="summary"></div>
     </section>
   </main>
@@ -57,6 +57,18 @@
   <footer>
     <small>Local state is saved to your browser (localStorage). You can clear it with "New Simulation".</small>
   </footer>
+
+  <!-- Final overlay (shown after the last round) -->
+  <div id="final-overlay" class="final-overlay" hidden>
+    <div class="final-card" role="dialog" aria-modal="true" aria-labelledby="final-title">
+      <h2 id="final-title">Simulation Complete</h2>
+      <!-- Final Summary content is rendered here by main.js -->
+      <div id="final-summary"></div>
+      <div class="final-actions">
+        <button id="btn-restart">Start New Simulation</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="src/main.js"></script>
 </body>

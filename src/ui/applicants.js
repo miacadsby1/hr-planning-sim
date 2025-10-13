@@ -84,7 +84,10 @@ export function renderApplicants(el, state, setState) {
     };
 
     // Insert into employees and recompute openings
-    const employees = [ ...(state.employees || []), newEmp ];
+    const employees = [
+  ...(state.employees || []),
+  newEmp
+].filter(e => !(e.status === 'vacant' && e.position === newEmp.position));
     const stillOpen = computeOpenPositions(employees);
     console.log('Open after :', stillOpen);
 
