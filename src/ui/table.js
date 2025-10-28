@@ -4,17 +4,17 @@ import { TRAINING_CAP } from '../constants.js';
 // ---------- helpers ----------
 const norm = (t) => (t || '').replace(/\s+/g, ' ').trim();
 const ORDER = ['Specialist', 'Manager', 'Director', 'VP', 'CEO'];
+const fmt = (v) => (v == null ? '—' : Number(v).toFixed(2));
 
 function levelOf(title = '') {
   const t = String(title);
-  if (t.includes('CEO'))      return 'CEO';
-  if (t.includes('VP'))       return 'VP';
+  if (t.includes('CEO')) return 'CEO';
+  if (t.includes('VP')) return 'VP';
   if (t.includes('Director')) return 'Director';
-  if (t.includes('Manager'))  return 'Manager';
+  if (t.includes('Manager')) return 'Manager';
   return 'Specialist';
 }
 
-// Open = any title that appears on a non-active record AND is not currently held by an active employee
 function computeOpenPositions(employees = []) {
   const activeTitles = new Set(
     employees.filter(e => e.status === 'active').map(e => norm(e.position))
@@ -23,7 +23,6 @@ function computeOpenPositions(employees = []) {
     .filter(e => e.status !== 'active')
     .map(e => e.position);
 
-  // Return ORIGINAL titles (for display), but decide openness via normalized titles
   return Array.from(new Set(nonActiveTitles.filter(t => !activeTitles.has(norm(t)))));
 }
 
@@ -31,7 +30,6 @@ function higherOpenTitlesFor(emp, employees) {
   const myLevel = levelOf(emp.position);
   const myIdx = ORDER.indexOf(myLevel);
   const open = computeOpenPositions(employees);
-  // Only roles that are strictly higher
   return open.filter(t => ORDER.indexOf(levelOf(t)) > myIdx);
 }
 
@@ -49,8 +47,10 @@ function makeVacancyRecord(oldPosition, templateEmp) {
 }
 // ---------- end helpers ----------
 
+
 export function renderTable(el, state, setState) {
   if (!el) return;
+  const isAdvanced = state.version === 'advanced';
 
   const q = (document.getElementById('search')?.value || '').toLowerCase();
   const employees = (state.employees || []).filter(e =>
@@ -72,8 +72,6 @@ export function renderTable(el, state, setState) {
 
   const rows = employees.map(e => {
     const isActive = e.status === 'active';
-
-    // Training select (hard-disable for non-active)
     const currentTrain = trainings[e.id] || '';
     const atCapAndNotSelected = used >= cap && (currentTrain === '' || currentTrain === 'none');
     const trainDisabledAttr = isActive ? '' : 'disabled';
@@ -82,10 +80,8 @@ export function renderTable(el, state, setState) {
       currentTrain === 'performance' ? '<span class="tag perf">Perf</span>' :
       currentTrain === 'potential'  ? '<span class="tag pot">Pot</span>'  : '';
 
-    // Promotion options (only higher-level open roles)
     const promoOptions = higherOpenTitlesFor(e, state.employees || []);
     const promoteDisabled = !isActive || promoOptions.length === 0;
-
     const promoteSelect = `
       <select class="promote-select" data-id="${e.id}" ${promoteDisabled ? 'disabled' : ''}>
         <option value="">Promote into… ${promoteDisabled ? '(none)' : ''}</option>
@@ -93,24 +89,36 @@ export function renderTable(el, state, setState) {
       </select>
     `;
 
-    // --- UX polish: faded row + status pill ---
     const rowClass = isActive ? '' : 'row-inactive';
-    const statusKey = String(e.status || 'active').toLowerCase(); // active, vacant, retired, quit, fired
+    const statusKey = String(e.status || 'active').toLowerCase();
     const statusPill = `<span class="pill status-${statusKey}">${e.status}</span>`;
+
+    // Advanced 3×3 columns
+    const advancedCols = isAdvanced
+      ? `
+        <td>${fmt(e.perf1)}</td>
+        <td>${fmt(e.perf2)}</td>
+        <td>${fmt(e.perf3)}</td>
+        <td>${fmt(e.pot1)}</td>
+        <td>${fmt(e.pot2)}</td>
+        <td>${fmt(e.pot3)}</td>
+      `
+      : '';
 
     return `
       <tr data-id="${e.id}" class="${rowClass}">
         <td>${e.name} ${tag}</td>
         <td>${e.position}</td>
-        <td>${Number(e.performance).toFixed(2)}</td>
-        <td>${Number(e.potential).toFixed(2)}</td>
+        <td>${fmt(e.performance)}</td>
+        <td>${fmt(e.potential)}</td>
+        ${advancedCols}
         <td>${e.age ?? ''}</td>
         <td>${statusPill}</td>
         <td>
           <select data-id="${e.id}" class="train-select" ${trainDisabledAttr}>
             <option value="" ${!currentTrain || currentTrain === 'none' ? 'selected' : ''}>No Training</option>
             <option value="performance" ${currentTrain === 'performance' ? 'selected' : ''} ${atCapAndNotSelected ? 'disabled' : ''}>Performance Training</option>
-            <option value="potential"  ${currentTrain === 'potential'  ? 'selected' : ''} ${atCapAndNotSelected ? 'disabled' : ''}>Potential Development</option>
+            <option value="potential" ${currentTrain === 'potential' ? 'selected' : ''} ${atCapAndNotSelected ? 'disabled' : ''}>Potential Development</option>
           </select>
         </td>
         <td>${promoteSelect}</td>
@@ -118,43 +126,45 @@ export function renderTable(el, state, setState) {
     `;
   }).join('');
 
+  const extraHead = isAdvanced
+    ? `<th>Perf1</th><th>Perf2</th><th>Perf3</th><th>Pot1</th><th>Pot2</th><th>Pot3</th>`
+    : '';
+
   el.innerHTML = `
     ${head}
     <table class="table">
       <thead>
         <tr>
-          <th>Name</th><th>Position</th><th>Perf</th><th>Pot</th><th>Age</th><th>Status</th>
-          <th>Training (cap ${cap})</th><th>Promote</th>
+          <th>Name</th><th>Position</th><th>Perf</th><th>Pot</th>
+          ${extraHead}
+          <th>Age</th><th>Status</th><th>Training (cap ${cap})</th><th>Promote</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
   `;
 
-  // --- Training handler with guard for non-active ---
+  // --- Training handler ---
   el.querySelectorAll('.train-select').forEach(sel => {
     sel.addEventListener('change', () => {
       const id = sel.dataset.id;
       if (!id) return;
-
       const emp = (state.employees || []).find(x => x.id === id);
       if (!emp || emp.status !== 'active') {
         alert('Training can only be assigned to ACTIVE employees.');
-        // reset the UI select to previous value
         sel.value = (state.trainings || {})[id] || '';
         return;
       }
 
       const prev = (state.trainings || {})[id] || '';
-      const nextVal = sel.value || ''; // '', 'performance', 'potential'
-
+      const nextVal = sel.value || '';
       const currentUsed = Object.values(state.trainings || {}).filter(v => v && v !== 'none').length;
       const wasCounting = !!prev && prev !== 'none';
-      const willCount   = !!nextVal && nextVal !== 'none';
-      const projected   = currentUsed + (willCount ? 1 : 0) - (wasCounting ? 1 : 0);
+      const willCount = !!nextVal && nextVal !== 'none';
+      const projected = currentUsed + (willCount ? 1 : 0) - (wasCounting ? 1 : 0);
 
       if (projected > TRAINING_CAP) {
-        alert(`Training cap reached (${TRAINING_CAP}). Deselect someone else first.`);
+        alert(`Training cap reached (${TRAINING_CAP}).`);
         sel.value = prev || '';
         return;
       }
@@ -172,7 +182,6 @@ export function renderTable(el, state, setState) {
       const toTitle = sel.value;
       const empId = sel.dataset.id;
       if (!toTitle || !empId) return;
-
       const emp = (state.employees || []).find(x => x.id === empId);
       if (!emp || emp.status !== 'active') {
         alert('Only ACTIVE employees can be promoted.');
@@ -188,33 +197,24 @@ export function renderTable(el, state, setState) {
       }
 
       const fromTitle = emp.position;
-
-      // 1) Update the employee to the new role
       const updated = (state.employees || []).map(x =>
         x.id === empId ? { ...x, position: toTitle } : x
       );
-      // 2) Add a vacancy record for the old role so it becomes open
       const vacancy = makeVacancyRecord(fromTitle, emp);
       const employees = [...updated, vacancy];
 
-      // Recompute open positions
-      const openAfter = computeOpenPositions(employees);
-
-      // Update latest history: openPositions + promoted list
       let nextHistory = state.history;
       if (Array.isArray(state.history) && state.history.length) {
         const latest = { ...state.history[state.history.length - 1] };
-        latest.openPositions = openAfter;
-        latest.promoted = [ ...(latest.promoted || []), { id: emp.id, name: emp.name, from: fromTitle, to: toTitle } ];
-        nextHistory = [ ...state.history.slice(0, -1), latest ];
+        latest.openPositions = computeOpenPositions(employees);
+        latest.promoted = [
+          ...(latest.promoted || []),
+          { id: emp.id, name: emp.name, from: fromTitle, to: toTitle }
+        ];
+        nextHistory = [...state.history.slice(0, -1), latest];
       }
 
-      const next = {
-        ...state,
-        employees,
-        history: nextHistory
-      };
-
+      const next = { ...state, employees, history: nextHistory };
       setState(next, { warnOnFirstDecision: true });
     });
   });
